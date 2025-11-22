@@ -1,0 +1,19 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+NEWLINE = _{ "\r\n" | "\n" }
+COMMENT = _{ LINE_COMMENT | BLOCK_COMMENT }
+LINE_COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* }
+BLOCK_COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+// Lexical
+
+Ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+INT_IMM = @{ DEC_INT | HEX_INT | OCT_INT}
+
+DEC_INT = { "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+HEX_INT = { ("0x" | "0X") ~ ASCII_HEX_DIGIT+ }
+OCT_INT = { "0" ~ ASCII_OCT_DIGIT+ }
+
+FLOAT_IMM = @{ DEC_FLOAT | HEX_FLOAT }
+
+DEC_FLOAT = { FRAC_IMM }
