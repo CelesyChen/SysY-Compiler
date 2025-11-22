@@ -8,6 +8,8 @@ BLOCK_COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
 Ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
+
+Imm = { INT_IMM | FLOAT_IMM }
 INT_IMM = @{ DEC_INT | HEX_INT | OCT_INT}
 
 DEC_INT = { "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
@@ -16,4 +18,85 @@ OCT_INT = { "0" ~ ASCII_OCT_DIGIT+ }
 
 FLOAT_IMM = @{ DEC_FLOAT | HEX_FLOAT }
 
-DEC_FLOAT = { FRAC_IMM ~ EXP? ~  }
+DEC_FLOAT = { (DEC_FRAC_CONST | DEC_DIGIT_SEQ ) ~ DEC_EXP? }
+HEX_FLOAT = { ("0x" | "0X") ~ (HEX_FRAC_CONST | HEX_DIGIT_SEQ ) ~ HEX_EXP? }
+
+DEC_FRAC_CONST = @{ (DEC_DIGIT_SEQ? ~ "." ~ DEC_DIGIT_SEQ) | (DEC_DIGIT_SEQ ~ ".") }
+DEC_EXP = @{ ("e" | "E") ~ SIGN? ~ DEC_DIGIT_SEQ }
+
+HEX_FRAC_CONST = @{ (HEX_DIGIT_SEQ? ~ "." ~ HEX_DIGIT_SEQ) | (HEX_DIGIT_SEQ ~ ".") }
+HEX_EXP = @{ ("p" | "P") ~ SIGN? ~ DEC_DIGIT_SEQ }
+
+SIGN = { "+" | "-"}
+
+DEC_DIGIT_SEQ = { ASCII_DIGIT+ }
+HEX_DIGIT_SEQ = { ASCII_HEX_DIGIT+ }
+
+// Top Level
+
+CompUnit = { SOI ~ Item* ~ EOI }
+Item = { Decl | FuncDef }
+
+// Declaration
+
+Decl = { ConstDecl | VarDecl }
+
+ConstDecl = { "const" ~ BType ~ ConstDef ~ ("," ~ ConstDef)* ~ ";" }
+BType = { "int" | "float" }
+ConstDef = { Ident ~ ( "[" ~ ConstExp ~ "]" )* ~ "=" ~ ConstInitVal }
+ConstInitVal = { ConstExp | ("{" ~ (ConstInitVal ~ ( "," ~ ConstInitVal )* )? ~ "}" ) }
+
+VarDecl = { BType ~ VarDef ~ ( "," ~ VarDef )* ~ ";" }
+VarDef = { Ident ~ ( "[" ~ ConstExp ~ "]" )* ~ ( "=" ~ InitVal )? }
+InitVal = { Exp | ("{" ~ (InitVal ~ ( "," ~ InitVal )* )? ~ "}" ) }
+
+// Function
+
+FuncDef = { FuncType ~ Ident ~ "(" ~ FuncFParams? ~ ")" ~ Block }
+FuncType = { "int" | "float" | "void" }
+
+FuncFParams = { FuncFParam ~ ( "," ~ FuncFParam )* }
+FuncFParam = { BType ~ Ident ~ ( "[" ~ "]" ~ ( "[" ~ Exp ~ "]" ) )? }
+
+// Statement
+
+Block = { "{" ~ BlockItem* ~ "}" }
+BlockItem = { Decl | Stmt }
+
+Stmt = {
+    Block 
+  | Exp? ~ ";" 
+  | LVal ~ "=" ~ Exp ~ ";"
+  | "if" ~ "(" ~ Cond ~ ")" ~ Stmt ~ ( "else" ~ Stmt )?
+  | "while" ~ "(" ~ Cond ~ ")" ~ Stmt
+  | ( "break" | "continue" )~ ";"
+  | "return" ~ Exp? ~ ";"
+}
+
+// Expression
+
+Cond = { LOrExp }
+
+LVal = { Ident ~ ( "[" ~ Exp ~ "]" )* }
+
+LOrExp = { LAndExp ~ ( "||" ~ LAndExp )* }
+LAndExp = { EqExp ~ ( "&&" ~ EqExp )* }
+EqExp = { RelExp ~ ( ( "==" | "!=" ) ~ RelExp )* }
+RelExp = { AddExp ~ ( ( "<" | ">" | "<=" | ">=" ) ~ AddExp )* }
+AddExp = { MulExp ~ ( ( "+" | "-" ) ~ MulExp )* }
+MulExp = { UnaryExp ~ ( ( "*" | "/" | "%" ) ~ UnaryExp )* }
+UnaryExp = {
+    PrimaryExp
+  | ("+" | "-" | "!") ~ UnaryExp
+}
+PrimaryExp = {
+    "(" ~ Exp ~ ")"
+  | LVal
+  | Imm
+  | Ident ~ "(" ~ FuncRParams? ~ ")"
+}
+
+FuncRParams = { Exp ~ ( "," ~ "Exp" )* }
+
+Exp = { AddExp }
+ConstExp = { AddExp }
