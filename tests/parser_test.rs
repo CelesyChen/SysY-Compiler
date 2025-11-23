@@ -1,6 +1,6 @@
-use sysy::parser::parse_file;
-use std::path::{Path};
-use std::fs::{read_dir};
+use sysy::pipeline::parser::parse_file;
+use std::path::Path;
+use std::fs::read_dir;
 
 
 #[test]
