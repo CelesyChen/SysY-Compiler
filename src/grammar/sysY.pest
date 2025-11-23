@@ -11,10 +11,7 @@ Item = { Decl | FuncDef }
 
 // Declaration
 
-Decl = { ConstDecl | VarDecl }
-
-ConstDecl = { "const" ~ BType ~ ConstDef ~ ("," ~ ConstDef)* ~ ";" }
-BType = { "int" | "float" }
+ConstDecl = { Const ~ BType ~ ConstDef ~ ("," ~ ConstDef)* ~ ";" }
 ConstDef = { Ident ~ ( "[" ~ ConstExp ~ "]" )* ~ "=" ~ ConstInitVal }
 ConstInitVal = { ConstExp | ("{" ~ (ConstInitVal ~ ( "," ~ ConstInitVal )* )? ~ "}" ) }
 
@@ -25,10 +22,13 @@ InitVal = { Exp | ("{" ~ (InitVal ~ ( "," ~ InitVal )* )? ~ "}" ) }
 // Function
 
 FuncDef = { FuncType ~ Ident ~ "(" ~ FuncFParams? ~ ")" ~ Block }
-FuncType = { "int" | "float" | "void" }
+FuncType = { INT | FLOAT | VOID }
 
-FuncFParams = { FuncFParam ~ ( "," ~ FuncFParam )* }
-FuncFParam = { BType ~ Ident ~ ( "[" ~ "]" ~ ( "[" ~ Exp ~ "]" ) )? }
+FuncFParams = _{ FuncFParam ~ ( "," ~ FuncFParam )* }
+FuncFParam = { BType ~ Ident ~ ( "[" ~ "]" ~ ( "[" ~ Exp ~ "]" )* )? }
+
+BType = _{ INT | FLOAT }
+Decl = { ConstDecl | VarDecl }
 
 // Statement
 
@@ -37,10 +37,10 @@ BlockItem = { Decl | Stmt }
 
 Stmt = {
     Block 
-    | "if" ~ "(" ~ Cond ~ ")" ~ Stmt ~ ( "else" ~ Stmt )?
-    | "while" ~ "(" ~ Cond ~ ")" ~ Stmt
-    | ( "break" | "continue" )~ ";"
-    | "return" ~ Exp? ~ ";"
+    | IF ~ "(" ~ Cond ~ ")" ~ Stmt ~ ( ELSE ~ Stmt )?
+    | WHILE ~ "(" ~ Cond ~ ")" ~ Stmt
+    | ( BREAK | CONTINUE )~ ";"
+    | RETURN ~ Exp? ~ ";"
     | LVal ~ "=" ~ Exp ~ ";"
     | Exp? ~ ";" 
 }
@@ -58,8 +58,8 @@ RelExp = { AddExp ~ ( ( "<" | ">" | "<=" | ">=" ) ~ AddExp )* }
 AddExp = { MulExp ~ ( ( "+" | "-" ) ~ MulExp )* }
 MulExp = { UnaryExp ~ ( ( "*" | "/" | "%" ) ~ UnaryExp )* }
 UnaryExp = {
-    PrimaryExp
-  | ("+" | "-" | "!") ~ UnaryExp
+    ("+" | "-" | "!") ~ UnaryExp
+    | PrimaryExp
 }
 PrimaryExp = {
     "(" ~ Exp ~ ")"
@@ -70,31 +70,45 @@ PrimaryExp = {
 
 FuncRParams = { Exp ~ ( "," ~ Exp )* }
 
-Exp = { AddExp }
 ConstExp = { AddExp }
+Exp = { AddExp }
 
 
 // Lexical
 
-Imm = { INT_IMM | FLOAT_IMM }
+Const = { "const" }
+INT = { "int" }
+FLOAT = { "float" }
+VOID = { "void" }
+
+IF = { "if" }
+ELSE = { "else" }
+WHILE = { "while" }
+BREAK = { "break" }
+CONTINUE = { "continue" }
+RETURN = { "return" }
+
+HEX_PREFIX = { ^"0x" }
+
+Imm = { FLOAT_IMM | INT_IMM }
 INT_IMM = @{ DEC_INT | HEX_INT | OCT_INT}
 
 DEC_INT = { "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
-HEX_INT = { ("0x" | "0X") ~ ASCII_HEX_DIGIT+ }
+HEX_INT = { HEX_PREFIX ~ ASCII_HEX_DIGIT+ }
 OCT_INT = { "0" ~ ASCII_OCT_DIGIT+ }
 
 FLOAT_IMM = @{ DEC_FLOAT | HEX_FLOAT }
 
 DEC_FLOAT = { (DEC_FRAC_CONST | DEC_DIGIT_SEQ ) ~ DEC_EXP? }
-HEX_FLOAT = { ("0x" | "0X") ~ (HEX_FRAC_CONST | HEX_DIGIT_SEQ ) ~ HEX_EXP? }
+HEX_FLOAT = { HEX_PREFIX ~ (HEX_FRAC_CONST | HEX_DIGIT_SEQ ) ~ HEX_EXP? }
 
 DEC_FRAC_CONST = @{ (DEC_DIGIT_SEQ? ~ "." ~ DEC_DIGIT_SEQ) | (DEC_DIGIT_SEQ ~ ".") }
-DEC_EXP = @{ ("e" | "E") ~ SIGN? ~ DEC_DIGIT_SEQ }
+DEC_EXP = @{ ^"e" ~ SIGN? ~ DEC_DIGIT_SEQ }
 
 HEX_FRAC_CONST = @{ (HEX_DIGIT_SEQ? ~ "." ~ HEX_DIGIT_SEQ) | (HEX_DIGIT_SEQ ~ ".") }
-HEX_EXP = @{ ("p" | "P") ~ SIGN? ~ DEC_DIGIT_SEQ }
+HEX_EXP = @{ ^"p" ~ SIGN? ~ DEC_DIGIT_SEQ }
 
-SIGN = { "+" | "-"}
+SIGN = { "+" | "-" }
 
 DEC_DIGIT_SEQ = { ASCII_DIGIT+ }
 HEX_DIGIT_SEQ = { ASCII_HEX_DIGIT+ }
