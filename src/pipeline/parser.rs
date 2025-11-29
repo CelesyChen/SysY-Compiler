@@ -11,6 +11,13 @@ use super::ds::CompilerPipeline;
 struct SysYParser;
 
 impl CompilerPipeline {
+  pub fn new() -> Self {
+    Self {
+      src: String::new(),
+      ast: None,
+    }
+  }
+
   pub fn readfile (
     &mut self,
     path: &PathBuf
@@ -18,13 +25,11 @@ impl CompilerPipeline {
     if !path.is_file() {
       bail!("No such file.")
     }
-
     self.src = fs::read_to_string(&path)?;
 
     Ok(())
   }
-
-  pub fn parse (
+  pub fn build_ast(
     &mut self,
   ) -> anyhow::Result<()> {
     let pairs = match SysYParser::parse(Rule::program, &self.src) {
@@ -34,6 +39,7 @@ impl CompilerPipeline {
       }
     };
 
-    Ok(())
+
+    unimplemented!()
   }
 }

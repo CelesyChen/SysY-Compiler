@@ -1,7 +1,29 @@
 
+use pest::iterators::{Pair, Pairs};
+use crate::pipeline::parser::Rule;
+
+#[macro_export]
+macro_rules! unreachable_rule {
+  ($pair:expr) => {{
+    let rule = $pair.as_rule();
+    let span = $pair.as_span();
+    let fragment = span.as_str();
+    unreachable!("Unexpected rule encountered during AST construction: {:?} @ {:?}: {}",
+      rule,
+      span,
+      fragment
+    )
+  }};
+}
+
+#[macro_export]
+macro_rules! to_inner {
+  ($pair:expr) => {
+    $pair.into_inner().next().expect("Unknown Pair")
+  };
+}
 
 // Top Level
-
 #[derive(Debug, Clone)]
 pub struct Program {
   pub items: Vec<Item>,
@@ -12,6 +34,36 @@ pub enum Item {
   Func(FuncDef),
   Decl(Decl),
 }
+
+pub struct AstBuilder;
+
+impl AstBuilder {
+  pub fn build_program (
+    pairs: Pairs<Rule>
+  ) -> Program {
+    let mut items = Vec::new();
+    for pair in pairs {
+      match pair.as_rule() {
+        Rule::Item => items.push(Self::build_item(pair)),
+        Rule::EOI => break,
+        _ => unreachable_rule!(pair),
+      }
+    }
+    Program { items }
+  }
+
+  pub fn build_item (
+    pair: Pair<Rule>
+  ) -> Item {
+    let inner = to_inner!(pair);
+    match inner.as_rule() {
+      Rule::Decl => Item::Decl(Self::build_decl(inner)),
+      Rule::FuncDef => Item::Decl(Self::build_func(inner)),
+      _ => unreachable_rule!(inner),
+    }
+  }
+}
+
 
 // Declarations
 
@@ -63,6 +115,43 @@ pub enum InitVal {
 pub enum BType {
   Int,
   Float,
+}
+
+impl AstBuilder {
+  pub fn build_decl (
+    pair: Pair<Rule>
+  ) -> Decl {
+    let inner = to_inner!(pair);
+    match inner.as_rule() {
+      Rule::ConstDecl => Decl::Const(Self::build_const_decl(inner)),
+      Rule::VarDecl => Decl::Var(Self::build_var_decl(inner)),
+      _ => unreachable_rule!(inner),
+    }
+  }
+
+  pub fn build_const_decl (
+    pair: Pair<Rule>
+  ) -> ConstDecl {
+    let mut inner = pair.into_inner();
+    let ty = Self::build_BType(
+      inner
+      .next()
+      .unwrap()
+    );
+    let mut defs = Vec::new();
+
+    for p in inner {
+      match p.as_rule() {
+        Rule::ConstDef => defs.push(Self::build_const_def(p)),
+        Rule::SEMICOLON => break,
+        _ => unreachable_rule!(p),
+      };
+    }
+    ConstDecl {
+      ty,
+      defs
+    }
+  }
 }
 
 // Function
@@ -130,7 +219,7 @@ pub enum BlockItem {
 pub enum Expr {
   Literal(Lit),
   LVal(LVal),
-  Ident(String),         
+  Ident(String),
   Call {
     func: String,
     args: Vec<Expr>,
@@ -184,3 +273,4 @@ pub enum BinaryOp {
   And,
   Or,
 }
+

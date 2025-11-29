@@ -11,11 +11,11 @@ Item = { Decl | FuncDef }
 
 // Declaration
 
-ConstDecl = { Const ~ BType ~ ConstDef ~ ("," ~ ConstDef)* ~ ";" }
+ConstDecl = { Const ~ BType ~ ConstDef ~ ("," ~ ConstDef)* ~ SEMICOLON }
 ConstDef = { Ident ~ ( "[" ~ ConstExp ~ "]" )* ~ "=" ~ ConstInitVal }
 ConstInitVal = { ConstExp | ("{" ~ (ConstInitVal ~ ( "," ~ ConstInitVal )* )? ~ "}" ) }
 
-VarDecl = { BType ~ VarDef ~ ( "," ~ VarDef )* ~ ";" }
+VarDecl = { BType ~ VarDef ~ ( "," ~ VarDef )* ~ SEMICOLON }
 VarDef = { Ident ~ ( "[" ~ ConstExp ~ "]" )* ~ ( "=" ~ InitVal )? }
 InitVal = { Exp | ("{" ~ (InitVal ~ ( "," ~ InitVal )* )? ~ "}" ) }
 
@@ -39,10 +39,10 @@ Stmt = {
     Block 
     | IF ~ "(" ~ Cond ~ ")" ~ Stmt ~ ( ELSE ~ Stmt )?
     | WHILE ~ "(" ~ Cond ~ ")" ~ Stmt
-    | ( BREAK | CONTINUE )~ ";"
-    | RETURN ~ Exp? ~ ";"
-    | LVal ~ "=" ~ Exp ~ ";"
-    | Exp? ~ ";" 
+    | ( BREAK | CONTINUE )~ SEMICOLON
+    | RETURN ~ Exp? ~ SEMICOLON
+    | LVal ~ "=" ~ Exp ~ SEMICOLON
+    | Exp? ~ SEMICOLON 
 }
 
 // Expression
@@ -80,6 +80,7 @@ Const = { "const" }
 INT = { "int" }
 FLOAT = { "float" }
 VOID = { "void" }
+SEMICOLON = { ";" }
 
 IF = { "if" }
 ELSE = { "else" }
